@@ -252,12 +252,23 @@
                 },
                 generateQuizQuestions() {
                     const words = [...this.selectedChapter.words];
+                    
+                    // Check if we have enough words for a meaningful quiz
+                    if (words.length < 4) {
+                        console.warn('Chapter has fewer than 4 words. Quiz may have duplicate options.');
+                    }
+                    
                     this.quizQuestions = words.map(word => {
                         // Get other meanings for wrong options
                         const otherWords = words.filter(w => w.word !== word.word);
                         const wrongOptions = this.shuffleArray(otherWords)
                             .slice(0, 3)
                             .map(w => w.meaning);
+                        
+                        // Pad with duplicates if needed (for chapters with < 4 words)
+                        while (wrongOptions.length < 3 && wrongOptions.length > 0) {
+                            wrongOptions.push(wrongOptions[0]);
+                        }
                         
                         // Combine and shuffle all options
                         const allOptions = this.shuffleArray([word.meaning, ...wrongOptions]);
