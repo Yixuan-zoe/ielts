@@ -1,0 +1,10 @@
+Sentence 04
++++
+[KEY]There is considerable debate about whether we should be attempting to contact life forms from an alien civilisation.
+---
+considerable|adj.|important or large enough to be noticed|The project requires a considerable amount of time and effort.
+debate|n.|a discussion involving different opinions|The debate about climate change continues in parliament.
+attempt|v.|to try to do something|Scientists attempt to find evidence of life on other planets.
+contact|v.|to communicate with someone|We should contact the authorities if we see anything suspicious.
+civilisation|n.|an advanced state of human society|Ancient civilisations built remarkable structures.
+alien|adj.|belonging to a foreign country or race; strange|The concept seemed alien to most people at first.
