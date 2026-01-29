@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Vocabulary</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="app" v-cloak>
+        <div class="container mx-auto px-4 py-8 max-w-4xl">
+            <!-- Header -->
+            <header class="mb-8">
+                <h1 class="text-4xl font-bold text-center text-blue-600 mb-4">IELTS Vocabulary</h1>
+                
+                <!-- Mode Selector -->
+                <div class="flex justify-center gap-4 mb-6">
+                    <button 
+                        @click="currentMode = 'study'"
+                        :class="currentMode === 'study' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600'"
+                        class="px-6 py-3 rounded-lg font-semibold transition-colors hover:bg-blue-500 hover:text-white border-2 border-blue-600">
+                        📚 Study Mode
+                    </button>
+                    <button 
+                        @click="currentMode = 'quiz'"
+                        :class="currentMode === 'quiz' ? 'bg-green-600 text-white' : 'bg-white text-green-600'"
+                        class="px-6 py-3 rounded-lg font-semibold transition-colors hover:bg-green-500 hover:text-white border-2 border-green-600">
+                        ✏️ Quiz Mode
+                    </button>
+                </div>
+                
+                <!-- Chapter Selector -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Chapter:</label>
+                    <select 
+                        v-model="selectedChapterIndex" 
+                        @change="onChapterChange"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option v-for="(chapter, index) in chapters" :key="index" :value="index">
+                            {{ chapter.title }}
+                        </option>
+                    </select>
+                </div>
+            </header>
+
+            <!-- Study Mode -->
+            <div v-if="currentMode === 'study' && selectedChapter" class="space-y-6">
+                <!-- Key Sentence -->
+                <div class="bg-blue-50 border-l-4 border-blue-600 p-4 rounded-lg shadow-md">
+                    <h3 class="text-sm font-semibold text-blue-800 mb-2">Key Sentence</h3>
+                    <p class="text-lg text-gray-800">{{ selectedChapter.key_sentence }}</p>
+                </div>
+
+                <!-- Vocabulary Cards -->
+                <div class="space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800">Vocabulary ({{ selectedChapter.words.length }} words)</h3>
+                    
+                    <div v-for="(word, index) in selectedChapter.words" :key="index" 
+                         class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                        <div class="flex items-start justify-between mb-3">
+                            <div>
+                                <h4 class="text-2xl font-bold text-blue-600">{{ word.word }}</h4>
+                                <span class="text-sm text-gray-500 italic">{{ word.pos }}</span>
+                            </div>
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                {{ index + 1 }} / {{ selectedChapter.words.length }}
+                            </span>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <span class="text-sm font-semibold text-gray-600">Meaning:</span>
+                                <p class="text-gray-800 mt-1">{{ word.meaning }}</p>
+                            </div>
+                            
+                            <div>
+                                <span class="text-sm font-semibold text-gray-600">Example:</span>
+                                <p class="text-gray-700 italic mt-1">{{ word.example }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Mode -->
+            <div v-if="currentMode === 'quiz' && selectedChapter" class="space-y-6">
+                <div v-if="!quizStarted" class="bg-white rounded-lg shadow-md p-8 text-center">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Ready to test your knowledge?</h3>
+                    <p class="text-gray-600 mb-6">
+                        This quiz will test you on {{ selectedChapter.words.length }} words from {{ selectedChapter.title }}
+                    </p>
+                    <button 
+                        @click="startQuiz"
+                        class="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                        Start Quiz
+                    </button>
+                </div>
+
+                <div v-else-if="!quizCompleted" class="bg-white rounded-lg shadow-md p-8">
+                    <!-- Progress Bar -->
+                    <div class="mb-6">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>Question {{ currentQuestionIndex + 1 }} of {{ quizQuestions.length }}</span>
+                            <span>Score: {{ quizScore }} / {{ currentQuestionIndex }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                                class="bg-green-600 h-2 rounded-full transition-all"
+                                :style="{width: ((currentQuestionIndex / quizQuestions.length) * 100) + '%'}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question -->
+                    <div v-if="currentQuestion" class="mb-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">
+                            What is the meaning of:
+                        </h3>
+                        <div class="bg-blue-50 p-4 rounded-lg mb-2">
+                            <p class="text-3xl font-bold text-blue-600 text-center">
+                                {{ currentQuestion.word }}
+                            </p>
+                            <p class="text-center text-sm text-gray-600 italic mt-1">
+                                {{ currentQuestion.pos }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Answer Options -->
+                    <div class="space-y-3 mb-6">
+                        <button
+                            v-for="(option, index) in currentQuestion.options"
+                            :key="index"
+                            @click="selectAnswer(option)"
+                            :disabled="answerSelected"
+                            :class="{
+                                'bg-white border-gray-300 hover:bg-gray-50': !answerSelected,
+                                'bg-green-100 border-green-500': answerSelected && option === currentQuestion.correct,
+                                'bg-red-100 border-red-500': answerSelected && option === selectedAnswer && option !== currentQuestion.correct,
+                                'bg-gray-100 border-gray-300': answerSelected && option !== currentQuestion.correct && option !== selectedAnswer
+                            }"
+                            class="w-full text-left px-6 py-4 border-2 rounded-lg transition-colors disabled:cursor-not-allowed">
+                            {{ option }}
+                        </button>
+                    </div>
+
+                    <!-- Next Button -->
+                    <div v-if="answerSelected" class="text-center">
+                        <div v-if="selectedAnswer === currentQuestion.correct" class="mb-4">
+                            <p class="text-green-600 font-semibold text-lg">✓ Correct!</p>
+                            <p class="text-gray-600 text-sm mt-2">{{ currentQuestion.example }}</p>
+                        </div>
+                        <div v-else class="mb-4">
+                            <p class="text-red-600 font-semibold text-lg">✗ Incorrect</p>
+                            <p class="text-gray-700 text-sm mt-2">
+                                Correct answer: <strong>{{ currentQuestion.correct }}</strong>
+                            </p>
+                            <p class="text-gray-600 text-sm mt-2 italic">{{ currentQuestion.example }}</p>
+                        </div>
+                        <button 
+                            @click="nextQuestion"
+                            class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                            {{ currentQuestionIndex < quizQuestions.length - 1 ? 'Next Question' : 'Finish Quiz' }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz Results -->
+                <div v-else class="bg-white rounded-lg shadow-md p-8 text-center">
+                    <h3 class="text-3xl font-bold text-gray-800 mb-4">Quiz Complete! 🎉</h3>
+                    
+                    <div class="mb-6">
+                        <div class="text-6xl font-bold text-blue-600 mb-2">
+                            {{ Math.round((quizScore / quizQuestions.length) * 100) }}%
+                        </div>
+                        <p class="text-xl text-gray-600">
+                            {{ quizScore }} out of {{ quizQuestions.length }} correct
+                        </p>
+                    </div>
+
+                    <div class="flex gap-4 justify-center">
+                        <button 
+                            @click="restartQuiz"
+                            class="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                            Try Again
+                        </button>
+                        <button 
+                            @click="currentMode = 'study'"
+                            class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                            Back to Study
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load vocabulary data -->
+    <script src="vocabulary.js"></script>
+
+    <!-- Vue App -->
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    chapters: window.VOCAB_DATA || [],
+                    selectedChapterIndex: 0,
+                    currentMode: 'study',
+                    
+                    // Quiz state
+                    quizStarted: false,
+                    quizCompleted: false,
+                    quizQuestions: [],
+                    currentQuestionIndex: 0,
+                    quizScore: 0,
+                    answerSelected: false,
+                    selectedAnswer: null
+                };
+            },
+            computed: {
+                selectedChapter() {
+                    return this.chapters[this.selectedChapterIndex] || null;
+                },
+                currentQuestion() {
+                    return this.quizQuestions[this.currentQuestionIndex] || null;
+                }
+            },
+            methods: {
+                onChapterChange() {
+                    // Reset quiz when changing chapters
+                    this.resetQuiz();
+                },
+                startQuiz() {
+                    this.quizStarted = true;
+                    this.quizCompleted = false;
+                    this.currentQuestionIndex = 0;
+                    this.quizScore = 0;
+                    this.generateQuizQuestions();
+                },
+                generateQuizQuestions() {
+                    const words = [...this.selectedChapter.words];
+                    
+                    // Check if we have enough words for a meaningful quiz
+                    if (words.length < 4) {
+                        console.warn('Chapter has fewer than 4 words. Quiz may have duplicate options.');
+                    }
+                    
+                    this.quizQuestions = words.map(word => {
+                        // Get other meanings for wrong options
+                        const otherWords = words.filter(w => w.word !== word.word);
+                        const wrongOptions = this.shuffleArray(otherWords)
+                            .slice(0, 3)
+                            .map(w => w.meaning);
+                        
+                        // Pad with duplicates if needed (for chapters with < 4 words)
+                        while (wrongOptions.length < 3 && wrongOptions.length > 0) {
+                            wrongOptions.push(wrongOptions[0]);
+                        }
+                        
+                        // Combine and shuffle all options
+                        const allOptions = this.shuffleArray([word.meaning, ...wrongOptions]);
+                        
+                        return {
+                            word: word.word,
+                            pos: word.pos,
+                            correct: word.meaning,
+                            example: word.example,
+                            options: allOptions
+                        };
+                    });
+                    
+                    // Shuffle questions
+                    this.quizQuestions = this.shuffleArray(this.quizQuestions);
+                },
+                shuffleArray(array) {
+                    const newArray = [...array];
+                    for (let i = newArray.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                    }
+                    return newArray;
+                },
+                selectAnswer(answer) {
+                    if (this.answerSelected) return;
+                    
+                    this.selectedAnswer = answer;
+                    this.answerSelected = true;
+                    
+                    if (answer === this.currentQuestion.correct) {
+                        this.quizScore++;
+                    }
+                },
+                nextQuestion() {
+                    this.answerSelected = false;
+                    this.selectedAnswer = null;
+                    
+                    if (this.currentQuestionIndex < this.quizQuestions.length - 1) {
+                        this.currentQuestionIndex++;
+                    } else {
+                        this.quizCompleted = true;
+                    }
+                },
+                restartQuiz() {
+                    this.quizCompleted = false;
+                    this.startQuiz();
+                },
+                resetQuiz() {
+                    this.quizStarted = false;
+                    this.quizCompleted = false;
+                    this.quizQuestions = [];
+                    this.currentQuestionIndex = 0;
+                    this.quizScore = 0;
+                    this.answerSelected = false;
+                    this.selectedAnswer = null;
+                }
+            },
+            mounted() {
+                console.log('IELTS Vocabulary App loaded with', this.chapters.length, 'chapters');
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
